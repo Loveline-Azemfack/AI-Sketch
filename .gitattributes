@@ -1,0 +1,6 @@
+dataset/raw/voiture/car.npy filter=lfs diff=lfs merge=lfs -text
+dataset/raw/flower/flower.npy filter=lfs diff=lfs merge=lfs -text
+dataset/raw/arbre/tree.npy filter=lfs diff=lfs merge=lfs -text
+dataset/raw/maison/house.npy filter=lfs diff=lfs merge=lfs -text
+dataset/raw/airplane/airplane.npy filter=lfs diff=lfs merge=lfs -text
+dataset/raw/soleil/sun.npy filter=lfs diff=lfs merge=lfs -text
