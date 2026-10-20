@@ -1,0 +1,6 @@
+house
+tree
+car
+fish
+sun
+apple
