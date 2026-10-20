@@ -408,11 +408,18 @@ class DrawingInterface(ctk.CTk):
             text="Confiance : --"
         )
 
-
-if __name__ == "__main__":
+# Lance l'application avec le thème sombre.
+def launch_app():
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
 
+    # Crée la fenêtre principale.
     app = DrawingInterface()
+
+    # Lance la boucle principale de l'interface.
     app.mainloop()
 
+
+# Vérifie que le fichier est exécuté directement.
+if __name__ == "__main__":
+    launch_app()
