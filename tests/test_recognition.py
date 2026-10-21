@@ -49,7 +49,7 @@ class TestRecognition(unittest.TestCase):
 
         result = predict_drawing(blank, model, self.classes)
 
-        self.assertEqual(result["class_name"], "Inconnu")
+        self.assertEqual(result["class_name"], "Aucun dessin")
         self.assertEqual(result["confidence"], 0.0)
 
     def test_low_confidence(self):

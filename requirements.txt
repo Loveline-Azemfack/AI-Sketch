@@ -4,3 +4,4 @@ opencv-python>=4.7.0
 PyQt5>=5.15.0
 matplotlib>=3.6.0
 scikit-learn>=1.2.0
+customtkinter
