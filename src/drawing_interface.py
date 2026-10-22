@@ -31,6 +31,24 @@ class DrawingInterface(ctk.CTk):
         self.last_y = None
         self.is_drawing = False
 
+        # Couleurs disponibles pour le pinceau
+        self.brush_colors = {
+            "Noir": "#000000",
+            "Rouge": "#E53935",
+            "Bleu": "#1E88E5",
+            "Vert": "#43A047",
+            "Jaune": "#FDD835",
+            "Violet": "#8E24AA",
+            "Orange": "#FB8C00",
+            "Rose": "#EC407A",
+        }
+
+        # Couleur utilisée par défaut
+        self.brush_color = self.brush_colors["Noir"]
+
+        # Indique si la gomme est activée
+        self.is_eraser = False
+
         # Image utilisée pour sauvegarder le dessin
         self.image = Image.new("RGB", (600, 450), "white")
         self.image_draw = ImageDraw.Draw(self.image)
@@ -157,7 +175,7 @@ class DrawingInterface(ctk.CTk):
             text_color=self.text_color
         ).pack(anchor="w", padx=18, pady=(20, 15))
 
-        # Réglage du pinceau
+        # Réglage de l'épaisseur du pinceau
         ctk.CTkLabel(
             controls,
             text="Épaisseur du pinceau",
@@ -184,9 +202,41 @@ class DrawingInterface(ctk.CTk):
             button_hover_color=self.purple_hover
         )
         self.brush_slider.set(8)
-        self.brush_slider.pack(fill="x", padx=18, pady=(8, 20))
+        self.brush_slider.pack(fill="x", padx=18, pady=(8, 14))
 
-        # Boutons d'action
+        # Choix de la couleur du pinceau
+        ctk.CTkLabel(
+            controls,
+            text="Couleur du pinceau",
+            font=("Arial", 12, "bold"),
+            text_color=self.secondary_text
+        ).pack(anchor="w", padx=18, pady=(0, 5))
+
+        self.color_menu = ctk.CTkOptionMenu(
+            controls,
+            values=list(self.brush_colors.keys()),
+            command=self.change_brush_color,
+            fg_color=self.blue_night,
+            button_color=self.purple,
+            button_hover_color=self.purple_hover,
+            dropdown_fg_color=self.card_color,
+            dropdown_hover_color=self.blue_hover,
+            text_color="#FFFFFF",
+            font=("Arial", 11)
+        )
+        self.color_menu.set("Noir")
+        self.color_menu.pack(fill="x", padx=15, pady=(0, 10))
+
+        # Bouton pour activer ou désactiver la gomme
+        self.eraser_button = self.create_button(
+            controls,
+            "Gomme : désactivée",
+            self.toggle_eraser,
+            "#302044",
+            "#482D66"
+        )
+
+        # Bouton pour effacer tout le dessin
         self.create_button(
             controls,
             "Effacer le dessin",
@@ -195,6 +245,7 @@ class DrawingInterface(ctk.CTk):
             self.blue_hover
         )
 
+        # Bouton pour enregistrer le dessin
         self.create_button(
             controls,
             "Enregistrer le dessin",
@@ -203,6 +254,7 @@ class DrawingInterface(ctk.CTk):
             self.blue_hover
         )
 
+        # Bouton pour lancer la reconnaissance
         self.create_button(
             controls,
             "Reconnaître l'objet",
@@ -243,7 +295,7 @@ class DrawingInterface(ctk.CTk):
         )
         self.confidence_label.pack(anchor="w", padx=12, pady=(0, 12))
 
-        # Bouton de réinitialisation du résultat
+        # Bouton pour réinitialiser le résultat
         self.create_button(
             controls,
             "Réinitialiser le résultat",
@@ -266,7 +318,48 @@ class DrawingInterface(ctk.CTk):
             text_color="#FFFFFF",
             font=("Arial", 12, "bold")
         )
-        button.pack(fill="x", padx=15, pady=6)
+        button.pack(fill="x", padx=15, pady=5)
+
+        # Retourne le bouton pour pouvoir modifier son apparence.
+        return button
+
+    # Change la couleur du pinceau
+    def change_brush_color(self, color_name):
+        self.brush_color = self.brush_colors.get(
+            color_name,
+            "#000000"
+        )
+
+        # Le choix d'une couleur désactive automatiquement la gomme.
+        self.is_eraser = False
+        self.update_eraser_button()
+
+    # Active ou désactive la gomme
+    def toggle_eraser(self):
+        self.is_eraser = not self.is_eraser
+        self.update_eraser_button()
+
+    # Actualise le bouton selon l'état de la gomme
+    def update_eraser_button(self):
+        if self.is_eraser:
+            self.eraser_button.configure(
+                text="Gomme : activée",
+                fg_color="#9F3150",
+                hover_color="#B83B60"
+            )
+        else:
+            self.eraser_button.configure(
+                text="Gomme : désactivée",
+                fg_color="#302044",
+                hover_color="#482D66"
+            )
+
+    # Retourne la couleur active du pinceau ou de la gomme
+    def get_active_color(self):
+        if self.is_eraser:
+            return "#FFFFFF"
+
+        return self.brush_color
 
     # Début du dessin
     def start_drawing(self, event):
@@ -274,18 +367,23 @@ class DrawingInterface(ctk.CTk):
         self.last_y = event.y
         self.is_drawing = True
 
-        # Affiche un point même si l'utilisateur ne déplace pas la souris
+        # Calcule le rayon du point selon l'épaisseur choisie.
         radius = self.brush_size / 2
 
+        # Récupère la couleur active.
+        active_color = self.get_active_color()
+
+        # Affiche un point même si la souris ne bouge pas.
         self.canvas.create_oval(
             event.x - radius,
             event.y - radius,
             event.x + radius,
             event.y + radius,
-            fill="black",
-            outline="black"
+            fill=active_color,
+            outline=active_color
         )
 
+        # Enregistre aussi le point dans l'image destinée à la sauvegarde.
         self.image_draw.ellipse(
             [
                 event.x - radius,
@@ -293,25 +391,31 @@ class DrawingInterface(ctk.CTk):
                 event.x + radius,
                 event.y + radius
             ],
-            fill="black"
+            fill=active_color
         )
 
     # Tracé à la souris
     def draw(self, event):
+        # Ne fait rien si le dessin n'a pas commencé.
         if not self.is_drawing or self.last_x is None:
             return
 
+        # Récupère la couleur du pinceau ou de la gomme.
+        active_color = self.get_active_color()
+
+        # Dessine le trait sur le canevas de l'interface.
         self.canvas.create_line(
             self.last_x,
             self.last_y,
             event.x,
             event.y,
-            fill="black",
+            fill=active_color,
             width=self.brush_size,
             capstyle="round",
             smooth=True
         )
 
+        # Reproduit le trait dans l'image qui sera enregistrée.
         self.image_draw.line(
             [
                 self.last_x,
@@ -319,12 +423,13 @@ class DrawingInterface(ctk.CTk):
                 event.x,
                 event.y
             ],
-            fill="black",
+            fill=active_color,
             width=self.brush_size
         )
 
-        # Arrondit les extrémités des traits
+        # Arrondit l'extrémité du trait dans l'image sauvegardée.
         radius = self.brush_size / 2
+
         self.image_draw.ellipse(
             [
                 event.x - radius,
@@ -332,9 +437,10 @@ class DrawingInterface(ctk.CTk):
                 event.x + radius,
                 event.y + radius
             ],
-            fill="black"
+            fill=active_color
         )
 
+        # Mémorise la nouvelle position de la souris.
         self.last_x = event.x
         self.last_y = event.y
 
@@ -344,36 +450,48 @@ class DrawingInterface(ctk.CTk):
         self.last_x = None
         self.last_y = None
 
-    # Modification de l'épaisseur
+    # Modification de l'épaisseur du pinceau
     def change_brush_size(self, value):
         self.brush_size = int(float(value))
-        self.brush_label.configure(text=f"{self.brush_size} px")
 
-    # Effacer le dessin
+        # Affiche la nouvelle épaisseur.
+        self.brush_label.configure(
+            text=f"{self.brush_size} px"
+        )
+
+    # Effacer complètement le dessin
     def clear_canvas(self):
+        # Supprime tous les traits affichés.
         self.canvas.delete("all")
 
+        # Crée une nouvelle image blanche.
         self.image = Image.new("RGB", (600, 450), "white")
         self.image_draw = ImageDraw.Draw(self.image)
 
+        # Réinitialise les résultats affichés.
         self.reset_result()
 
     # Enregistrer le dessin
     def save_drawing(self):
+        # Crée le dossier des captures s'il n'existe pas.
         os.makedirs("captures", exist_ok=True)
 
+        # Définit le chemin du fichier de sauvegarde.
         file_path = os.path.join("captures", "dessin.png")
 
         try:
-            # Enregistre l'image avec Pillow
+            # Enregistre l'image avec Pillow.
             self.image.save(file_path)
 
+            # Confirme que l'enregistrement a réussi.
             messagebox.showinfo(
                 "Enregistrement réussi",
-                f"Le dessin a été enregistré ici :\n{os.path.abspath(file_path)}"
+                f"Le dessin a été enregistré ici :\n"
+                f"{os.path.abspath(file_path)}"
             )
 
         except Exception as error:
+            # Affiche un message si l'enregistrement échoue.
             messagebox.showerror(
                 "Erreur",
                 f"Impossible d'enregistrer le dessin.\n{error}"
@@ -381,7 +499,7 @@ class DrawingInterface(ctk.CTk):
 
     # Reconnaissance du dessin
     def recognize_drawing(self):
-        # À connecter au modèle de reconnaissance du projet
+        # Cette partie doit encore être reliée au modèle de reconnaissance.
         self.result_label.configure(
             text="Modèle non connecté",
             text_color="#C4B5FD"
@@ -391,6 +509,7 @@ class DrawingInterface(ctk.CTk):
             text="Confiance : indisponible"
         )
 
+        # Informe l'utilisateur que le modèle reste à intégrer.
         messagebox.showinfo(
             "Reconnaissance",
             "L'interface est prête. Il reste à connecter "
@@ -408,7 +527,8 @@ class DrawingInterface(ctk.CTk):
             text="Confiance : --"
         )
 
-# Lance l'application avec le thème sombre.
+
+# Lance l'application avec le thème sombre
 def launch_app():
     ctk.set_appearance_mode("dark")
     ctk.set_default_color_theme("blue")
@@ -420,6 +540,7 @@ def launch_app():
     app.mainloop()
 
 
-# Vérifie que le fichier est exécuté directement.
+# Lance l'application uniquement si ce fichier est exécuté directement.
 if __name__ == "__main__":
     launch_app()
+
